@@ -1,19 +1,18 @@
 from flask import Flask, request, jsonify, render_template, send_file
 import yt_dlp
 import os
-import glob
 
 app = Flask(__name__)
 
-# YouTube block bypass karne ke liye common settings
+# Yahan humne cookies.txt ka rasta de diya hai
 YDL_OPTS = {
     'quiet': True, 
     'no_warnings': True,
     'nocheckcertificate': True,
+    'cookiefile': 'cookies.txt',  # <--- YEH SABSE ZAROORI LINE HAI
     'extractor_args': {
         'youtube': {
-            'player_client': ['android_vr', 'ios', 'android', 'web_safari'],
-            'player_skip': ['webpage']
+            'player_client': ['android', 'web_safari', 'ios', 'web'],
         }
     }
 }
@@ -28,7 +27,7 @@ def get_info():
     url = data.get('url')
     
     if not url:
-        return jsonify({'error': 'Link daalein'}), 400
+        return jsonify({'error': 'Kripya link daalein'}), 400
 
     try:
         with yt_dlp.YoutubeDL(YDL_OPTS) as ydl:
@@ -40,18 +39,18 @@ def get_info():
                 'mp3_url': f"/download?url={url}&type=mp3"
             })
     except Exception as e:
-        print(f"Error: {str(e)}") # Render logs mein error dikhega
-        return jsonify({'error': 'YouTube ne block kar diya hai. Kripya thodi der baad ya kisi aur video ke saath try karein.'}), 400
+        print(f"Error: {str(e)}") # Yeh error Render ke logs mein dikhega
+        return jsonify({'error': 'YouTube ne block kar diya hai. Kripya cookies update karein ya thodi der baad try karein.'}), 400
 
 @app.route('/download')
 def download():
     url = request.args.get('url')
     dtype = request.args.get('type')
     
+    # Downloads folder check karein
     if not os.path.exists('downloads'):
         os.makedirs('downloads')
         
-    # Download ke liye settings copy karein
     dl_opts = YDL_OPTS.copy()
     dl_opts['outtmpl'] = 'downloads/%(title)s.%(ext)s'
     
@@ -76,15 +75,13 @@ def download():
                 filename = os.path.splitext(filename)[0] + '.mp3'
                 
             final_path = os.path.abspath(filename)
-            
-            response = send_file(final_path, as_attachment=True)
-            return response
+            return send_file(final_path, as_attachment=True)
             
     except Exception as e:
         print(f"Download Error: {str(e)}")
-        return f"Download Error: YouTube ne download block kar diya hai."
+        return f"Download Error: YouTube ne download block kar diya hai. (Check Render logs for details)"
 
-# Render ke liye zaroori port binding
+# Render par deploy karne ke liye port binding
 if __name__ == '__main__':
     port = int(os.environ.get('PORT', 5000))
     app.run(host='0.0.0.0', port=port)
