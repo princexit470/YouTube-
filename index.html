@@ -1,0 +1,73 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>My Downloader</title>
+    <style>
+        body { font-family: Arial, sans-serif; background: #111; color: #fff; display: flex; justify-content: center; padding: 50px 20px; }
+        .box { background: #222; padding: 30px; border-radius: 10px; width: 100%; max-width: 450px; text-align: center; }
+        input { width: 100%; padding: 12px; border-radius: 5px; border: none; margin-bottom: 15px; font-size: 16px; }
+        button { width: 100%; padding: 12px; background: #ff0000; color: white; border: none; border-radius: 5px; font-size: 18px; font-weight: bold; cursor: pointer; }
+        button:hover { background: #cc0000; }
+        #loader { display: none; color: #ffcc00; margin-top: 15px; font-weight: bold; }
+        #result { display: none; margin-top: 20px; }
+        img { width: 100%; border-radius: 10px; }
+        .btns { display: flex; gap: 10px; margin-top: 15px; }
+        .btns a { flex: 1; text-decoration: none; }
+        .btns button { background: #007bff; padding: 15px; font-size: 15px; }
+        .btns button:hover { background: #0056b3; }
+    </style>
+</head>
+<body>
+    <div class="box">
+        <h2>YouTube Downloader</h2>
+        <input type="text" id="url" placeholder="YouTube Link Paste Karein">
+        <button onclick="getVideo()">Video Fetch Karein</button>
+        <div id="loader">Thoda wait karein... Link nikal rahe hain.</div>
+        <div id="result">
+            <img id="thumb" src="">
+            <h3 id="title" style="font-size: 16px;"></h3>
+            <div class="btns">
+                <a id="dl-mp4" href="#"><button>Download MP4</button></a>
+                <a id="dl-mp3" href="#"><button>Download MP3</button></a>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        async function getVideo() {
+            const url = document.getElementById('url').value;
+            const loader = document.getElementById('loader');
+            const result = document.getElementById('result');
+            
+            if(!url) return alert('Link daalein!');
+            
+            loader.style.display = 'block';
+            result.style.display = 'none';
+
+            try {
+                const res = await fetch('/get_info', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ url: url })
+                });
+                const data = await res.json();
+                
+                if(data.error) {
+                    alert(data.error);
+                } else {
+                    document.getElementById('thumb').src = data.thumbnail;
+                    document.getElementById('title').innerText = data.title;
+                    document.getElementById('dl-mp4').href = data.mp4_url;
+                    document.getElementById('dl-mp3').href = data.mp3_url;
+                    result.style.display = 'block';
+                }
+            } catch (e) {
+                alert('Kuch gadbad ho gayi!');
+            }
+            loader.style.display = 'none';
+        }
+    </script>
+</body>
+</html>
