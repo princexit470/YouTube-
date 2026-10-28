@@ -4,18 +4,19 @@ import os
 
 app = Flask(__name__)
 
-# Cookies ka absolute path nikalna (Yeh Render ko batayega file kahan hai)
+# Cookies file ka sahi rasta
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 COOKIE_PATH = os.path.join(BASE_DIR, 'cookies.txt')
 
+# YouTube Block aur Format Error Fix
 YDL_OPTS = {
     'quiet': True, 
     'no_warnings': True,
     'nocheckcertificate': True,
-    'cookiefile': COOKIE_PATH,  # <--- Yahan path de diya hai
+    'cookiefile': COOKIE_PATH,
     'extractor_args': {
         'youtube': {
-            'player_client': ['android', 'web_safari', 'ios', 'web'],
+            'player_client': ['android', 'ios'], # Web safari hata diya
         }
     }
 }
@@ -42,8 +43,8 @@ def get_info():
                 'mp3_url': f"/download?url={url}&type=mp3"
             })
     except Exception as e:
-        print(f"ERROR LOG: {str(e)}") # Render logs mein asli error dikhega
-        return jsonify({'error': 'YouTube ne block kiya. Logs check karein.'}), 400
+        print(f"ERROR LOG: {str(e)}") 
+        return jsonify({'error': 'Video fetch nahi hui. YouTube block kar raha hai ya link galat hai.'}), 400
 
 @app.route('/download')
 def download():
@@ -56,6 +57,7 @@ def download():
     dl_opts = YDL_OPTS.copy()
     dl_opts['outtmpl'] = 'downloads/%(title)s.%(ext)s'
     
+    # Format Error Fix
     if dtype == 'mp3':
         dl_opts.update({
             'format': 'bestaudio/best',
@@ -66,7 +68,8 @@ def download():
             }],
         })
     else:
-        dl_opts.update({'format': 'best[ext=mp4]/best'})
+        # Yahan format change kiya gaya hai jo error de raha tha
+        dl_opts.update({'format': 'bestvideo*+bestaudio/best'})
 
     try:
         with yt_dlp.YoutubeDL(dl_opts) as ydl:
@@ -81,7 +84,7 @@ def download():
             
     except Exception as e:
         print(f"DOWNLOAD ERROR LOG: {str(e)}")
-        return f"Download Error: {str(e)}"
+        return f"Download Error: Format issue ya YouTube block. (Details Render logs me hain)"
 
 if __name__ == '__main__':
     port = int(os.environ.get('PORT', 5000))
