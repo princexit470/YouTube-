@@ -8,7 +8,7 @@ app = Flask(__name__)
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 COOKIE_PATH = os.path.join(BASE_DIR, 'cookies.txt')
 
-# YouTube Block aur Format Error Fix
+# YouTube Block aur Format Error Fix (Updated Clients)
 YDL_OPTS = {
     'quiet': True, 
     'no_warnings': True,
@@ -16,7 +16,7 @@ YDL_OPTS = {
     'cookiefile': COOKIE_PATH,
     'extractor_args': {
         'youtube': {
-            'player_client': ['android', 'ios'], # Web safari hata diya
+            'player_client': ['tv', 'mweb', 'ios'], # TV aur Mobile web use kar rahe hain
         }
     }
 }
@@ -57,7 +57,6 @@ def download():
     dl_opts = YDL_OPTS.copy()
     dl_opts['outtmpl'] = 'downloads/%(title)s.%(ext)s'
     
-    # Format Error Fix
     if dtype == 'mp3':
         dl_opts.update({
             'format': 'bestaudio/best',
@@ -68,16 +67,24 @@ def download():
             }],
         })
     else:
-        # Yahan format change kiya gaya hai jo error de raha tha
-        dl_opts.update({'format': 'bestvideo*+bestaudio/best'})
+        # Format fix: Ab video aur audio alag mangwayenge aur merge karenge
+        dl_opts.update({
+            'format': 'bestvideo*+bestaudio/best',
+            'merge_output_format': 'mp4'
+        })
 
     try:
         with yt_dlp.YoutubeDL(dl_opts) as ydl:
             info = ydl.extract_info(url, download=True)
             filename = ydl.prepare_filename(info)
             
+            # Agar format merge hone ke baad extension change ho jaye
             if dtype == 'mp3':
                 filename = os.path.splitext(filename)[0] + '.mp3'
+            else:
+                base, ext = os.path.splitext(filename)
+                if ext != '.mp4':
+                    filename = base + '.mp4'
                 
             final_path = os.path.abspath(filename)
             return send_file(final_path, as_attachment=True)
