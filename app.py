@@ -4,11 +4,10 @@ import os
 
 app = Flask(__name__)
 
-# Cookies file ka sahi rasta
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 COOKIE_PATH = os.path.join(BASE_DIR, 'cookies.txt')
 
-# YouTube Block aur Format Error Fix (Updated Clients)
+# POT provider aur format fix ke saath settings
 YDL_OPTS = {
     'quiet': True, 
     'no_warnings': True,
@@ -16,7 +15,10 @@ YDL_OPTS = {
     'cookiefile': COOKIE_PATH,
     'extractor_args': {
         'youtube': {
-            'player_client': ['tv', 'mweb', 'ios'], # TV aur Mobile web use kar rahe hain
+            'player_client': ['android', 'ios', 'web'], # TV/mweb hata diya
+            'youtubepot-bgutilhttp': {
+                'base_url': 'http://127.0.0.1:4416' # POT Provider ka address
+            }
         }
     }
 }
@@ -44,7 +46,7 @@ def get_info():
             })
     except Exception as e:
         print(f"ERROR LOG: {str(e)}") 
-        return jsonify({'error': 'Video fetch nahi hui. YouTube block kar raha hai ya link galat hai.'}), 400
+        return jsonify({'error': 'Video fetch nahi hui. YouTube block kar raha hai.'}), 400
 
 @app.route('/download')
 def download():
@@ -78,7 +80,6 @@ def download():
             info = ydl.extract_info(url, download=True)
             filename = ydl.prepare_filename(info)
             
-            # Agar format merge hone ke baad extension change ho jaye
             if dtype == 'mp3':
                 filename = os.path.splitext(filename)[0] + '.mp3'
             else:
@@ -91,7 +92,7 @@ def download():
             
     except Exception as e:
         print(f"DOWNLOAD ERROR LOG: {str(e)}")
-        return f"Download Error: Format issue ya YouTube block. (Details Render logs me hain)"
+        return f"Download Error: Format issue ya YouTube block."
 
 if __name__ == '__main__':
     port = int(os.environ.get('PORT', 5000))
