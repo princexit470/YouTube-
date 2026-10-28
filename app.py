@@ -4,12 +4,15 @@ import os
 
 app = Flask(__name__)
 
-# Yahan humne cookies.txt ka rasta de diya hai
+# Cookies ka absolute path nikalna (Yeh Render ko batayega file kahan hai)
+BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+COOKIE_PATH = os.path.join(BASE_DIR, 'cookies.txt')
+
 YDL_OPTS = {
     'quiet': True, 
     'no_warnings': True,
     'nocheckcertificate': True,
-    'cookiefile': 'cookies.txt',  # <--- YEH SABSE ZAROORI LINE HAI
+    'cookiefile': COOKIE_PATH,  # <--- Yahan path de diya hai
     'extractor_args': {
         'youtube': {
             'player_client': ['android', 'web_safari', 'ios', 'web'],
@@ -39,15 +42,14 @@ def get_info():
                 'mp3_url': f"/download?url={url}&type=mp3"
             })
     except Exception as e:
-        print(f"Error: {str(e)}") # Yeh error Render ke logs mein dikhega
-        return jsonify({'error': 'YouTube ne block kar diya hai. Kripya cookies update karein ya thodi der baad try karein.'}), 400
+        print(f"ERROR LOG: {str(e)}") # Render logs mein asli error dikhega
+        return jsonify({'error': 'YouTube ne block kiya. Logs check karein.'}), 400
 
 @app.route('/download')
 def download():
     url = request.args.get('url')
     dtype = request.args.get('type')
     
-    # Downloads folder check karein
     if not os.path.exists('downloads'):
         os.makedirs('downloads')
         
@@ -78,10 +80,9 @@ def download():
             return send_file(final_path, as_attachment=True)
             
     except Exception as e:
-        print(f"Download Error: {str(e)}")
-        return f"Download Error: YouTube ne download block kar diya hai. (Check Render logs for details)"
+        print(f"DOWNLOAD ERROR LOG: {str(e)}")
+        return f"Download Error: {str(e)}"
 
-# Render par deploy karne ke liye port binding
 if __name__ == '__main__':
     port = int(os.environ.get('PORT', 5000))
     app.run(host='0.0.0.0', port=port)
